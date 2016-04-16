@@ -40,7 +40,8 @@ class WebScrapingHelper
     res = http.start do
       http.request req
     end
-    @jar.parse(res["set-cookie"], url)
+    cookie = res["set-cookie"]
+    @jar.parse(cookie, url) if cookie
     set_wait_base_time
     res.body
   end
