@@ -8,8 +8,12 @@ class WebScrapingHelper
   DEFAULT_USER_AGENT = 'Mozilla/5.0'
   DEFAULT_WAIT_TIME = 1
 
-  def initialize
+  def initialize(cookie_filename = nil)
     @jar = HTTP::CookieJar.new
+    if cookie_filename
+      @jar.load(cookie_filename) if File.exist?(cookie_filename)
+      @cookie_filename = cookie_filename
+    end
   end
 
   attr_writer :user_agent, :wait_time
@@ -41,7 +45,10 @@ class WebScrapingHelper
       http.request req
     end
     cookie = res["set-cookie"]
-    @jar.parse(cookie, url) if cookie
+    if cookie
+      @jar.parse(cookie, url)
+      @jar.save(@cookie_filename) if @cookie_filename
+    end
     set_wait_base_time
     res.body
   end
