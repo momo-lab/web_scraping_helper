@@ -26,6 +26,11 @@ class WebScrapingHelper
     request_http(url)
   end
 
+  def exist_cookie?(url)
+    cookie = HTTP::Cookie.cookie_value(@jar.cookies(url))
+    not cookie.empty?
+  end
+
   private
 
   def request_http(url, data = nil)
