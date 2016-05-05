@@ -17,7 +17,12 @@ describe WebScrapingHelper do
     expect(WebScrapingHelper::VERSION).not_to be nil
   end
 
+  describe "save cookie file" do
+    # TODO add test
+  end
+
   describe "#wait_time" do
+    # TODO add test
   end
 
   describe "#user_agent" do
