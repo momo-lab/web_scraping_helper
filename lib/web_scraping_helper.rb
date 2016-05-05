@@ -43,7 +43,8 @@ class WebScrapingHelper
           end
     req.set_form_data(data) if data
     req["User-Agent"] = @user_agent || DEFAULT_USER_AGENT
-    req["Cookie"] = HTTP::Cookie.cookie_value(@jar.cookies(url))
+    cookie = HTTP::Cookie.cookie_value(@jar.cookies(url))
+    req["Cookie"] = cookie unless cookie.empty?
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true if uri.scheme == "https"
     res = http.start do
