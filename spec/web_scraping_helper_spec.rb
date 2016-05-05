@@ -5,7 +5,7 @@ describe WebScrapingHelper do
     stub_request(:get, %r[http://www.example.com/.*]).to_return(
       headers: { "Set-Cookie" => cookie }
     )
-    stub_request(:post, %r[http://www.example.com/post]).to_return(
+    stub_request(:post, %r[http://www.example.com/.*]).to_return(
       headers: { "Set-Cookie" => cookie }
     )
     stub_request(:get, %r[http://www.example2.com/.*])
@@ -37,6 +37,36 @@ describe WebScrapingHelper do
       target.get_http("http://www.example.com/path/to")
       expect(a_request(:get, "http://www.example.com/path/to").
              with(headers: { 'User-Agent' => 'agent_test' })).to have_been_made.once
+    end
+  end
+
+  describe "add custom request header" do
+    it "#get_http" do
+      target.get_http("http://www.example.com/",
+        "Connection" => "keep-alive",
+        "If-Modified-Since" => "Thu, 05 May 2016 21:36:00 +0900",
+      )
+      expect(a_request(:get, "http://www.example.com/").with(
+        headers: {
+          "Connection": "keep-alive",
+          "If-Modified-Since": "Thu, 05 May 2016 21:36:00 +0900",
+        }
+      )).to have_been_made.once
+    end
+
+    it "#post_http" do
+      target.post_http("http://www.example.com/",
+        body: {a: 1},
+        "Connection" => "keep-alive",
+        "user-agent" => "change user agent",
+      )
+      expect(a_request(:post, "http://www.example.com/").with(
+        body: {a: "1"},
+        headers: {
+          "Connection" => "keep-alive",
+          "User-Agent" => "change user agent",
+        }
+      )).to have_been_made.once
     end
   end
 
@@ -106,7 +136,7 @@ describe WebScrapingHelper do
 
   describe "#post_http" do
     it "request body" do
-      target.post_http("http://www.example.com/post", a: 1, b: 2)
+      target.post_http("http://www.example.com/post", body: {a: 1, b: 2})
       expect(a_request(:post, "http://www.example.com/post").
              with(body: {a: "1", b: "2"})).to have_been_made.once
     end

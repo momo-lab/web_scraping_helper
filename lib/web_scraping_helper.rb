@@ -18,12 +18,12 @@ class WebScrapingHelper
 
   attr_writer :user_agent, :wait_time
 
-  def post_http(url, data)
-    request_http(url, data)
+  def post_http(url, opts = {})
+    request_http(Net::HTTP::Post, url, opts)
   end
 
-  def get_http(url, cache_file = nil)
-    request_http(url)
+  def get_http(url, opts = {})
+    request_http(Net::HTTP::Get, url, opts)
   end
 
   def exist_cookie?(url)
@@ -33,20 +33,25 @@ class WebScrapingHelper
 
   private
 
-  def request_http(url, data = nil)
+  def request_http(request_method, url, opts)
     wait
     uri = URI.parse(url.to_s)
-    req = if data
-            Net::HTTP::Post.new(uri.request_uri)
-          else
-            Net::HTTP::Get.new(uri.request_uri)
-          end
-    req.set_form_data(data) if data
-    req["User-Agent"] = @user_agent || DEFAULT_USER_AGENT
-    cookie = HTTP::Cookie.cookie_value(@jar.cookies(url))
-    req["Cookie"] = cookie unless cookie.empty?
+
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true if uri.scheme == "https"
+
+    headers = {}
+    opts.each{|k, v| headers[k.downcase] = v if String === k}
+    unless headers.key?("user-agent")
+      headers["user-agent"] = @user_agent || DEFAULT_USER_AGENT
+    end
+    unless headers.key?("cookie")
+      cookie = HTTP::Cookie.cookie_value(@jar.cookies(url))
+      headers["cookie"] = cookie unless cookie.empty?
+    end
+    req = request_method.new(uri.request_uri, headers)
+    req.set_form_data(opts[:body]) if opts[:body]
+
     res = http.start do
       http.request req
     end
