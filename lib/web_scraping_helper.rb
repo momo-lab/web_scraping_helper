@@ -17,13 +17,15 @@ class WebScrapingHelper
 
   attr_writer :user_agent, :wait_time, :encoding
 
-  def post_http(url, opts = {})
+  def post(url, opts = {})
     request_http(:post, url, opts)
   end
+  alias post_http post # support old method
 
-  def get_http(url, opts = {})
+  def get(url, opts = {})
     request_http(:get, url, opts)
   end
+  alias get_http get # support old method
 
   def exist_cookie?(url)
     cookie = HTTP::Cookie.cookie_value(@jar.cookies(url))

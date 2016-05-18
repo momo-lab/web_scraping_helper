@@ -39,22 +39,22 @@ describe WebScrapingHelper do
 
   describe "#user_agent" do
     it "default User-Agent" do
-      target.get_http("http://www.example.com/path/to")
+      target.get("http://www.example.com/path/to")
       expect(a_request(:get, "http://www.example.com/path/to").
              with(headers: { 'User-Agent' => 'Mozilla/5.0' })).to have_been_made.once
     end
 
     it "User-Agent" do
       target.user_agent = "agent_test"
-      target.get_http("http://www.example.com/path/to")
+      target.get("http://www.example.com/path/to")
       expect(a_request(:get, "http://www.example.com/path/to").
              with(headers: { 'User-Agent' => 'agent_test' })).to have_been_made.once
     end
   end
 
   describe "add custom request header" do
-    it "#get_http" do
-      target.get_http("http://www.example.com/",
+    it "#get" do
+      target.get("http://www.example.com/",
         "Connection" => "keep-alive",
         "If-Modified-Since" => "Thu, 05 May 2016 21:36:00 +0900",
       )
@@ -66,8 +66,8 @@ describe WebScrapingHelper do
       )).to have_been_made.once
     end
 
-    it "#post_http" do
-      target.post_http("http://www.example.com/",
+    it "#post" do
+      target.post("http://www.example.com/",
         body: {a: 1},
         "Connection" => "keep-alive",
         "user-agent" => "change user agent",
@@ -82,10 +82,10 @@ describe WebScrapingHelper do
     end
   end
 
-  describe "#get_http" do
+  describe "#get" do
     context "return http headers" do
       before do
-        @html = target.get_http("http://www.example.com/path/to/1")
+        @html = target.get("http://www.example.com/path/to/1")
       end
       it "exist Set-Cookie header" do
         expect(@html.headers[:set_cookie]).to include "key=value; path=/"
@@ -97,7 +97,7 @@ describe WebScrapingHelper do
         let(:content_type) { "text/html;charset=Windows-31J" }
         let(:body) { "あいうえお".encode!("Windows-31J").force_encoding("ASCII-8BIT") }
         before do
-          @html = target.get_http("http://www.example.com/path/to/1")
+          @html = target.get("http://www.example.com/path/to/1")
         end
         it "should encoding utf-8" do
           expect(@html.encoding).to eq Encoding::UTF_8
@@ -111,7 +111,7 @@ describe WebScrapingHelper do
         let(:content_type) { "text/html;charset=UTF-8" }
         let(:body) { "あいうえお".encode!("Windows-31J").force_encoding("ASCII-8BIT") }
         before do
-          @html = target.get_http("http://www.example.com/path/to/1", encoding: "Windows-31J")
+          @html = target.get("http://www.example.com/path/to/1", encoding: "Windows-31J")
         end
         it "should encoding utf-8" do
           expect(@html.encoding).to eq Encoding::UTF_8
@@ -125,7 +125,7 @@ describe WebScrapingHelper do
     describe "Cookie header setting" do
       context "when first access" do
         before do
-          target.get_http("http://www.example.com/path/to/1")
+          target.get("http://www.example.com/path/to/1")
         end
         it "not exist cookie header" do
           expect(a_request(:get, "http://www.example.com/path/to/1").
@@ -136,8 +136,8 @@ describe WebScrapingHelper do
 
       context "when same domain" do
         before do
-          target.get_http("http://www.example.com/path/to/1")
-          target.get_http("http://www.example.com/path/to/2")
+          target.get("http://www.example.com/path/to/1")
+          target.get("http://www.example.com/path/to/2")
         end
         it "exist cookie header" do
           expect(a_request(:get, "http://www.example.com/path/to/2").
@@ -147,8 +147,8 @@ describe WebScrapingHelper do
 
       context "when another domain" do
         before do
-          target.get_http("http://www.example.com/path/to/1")
-          target.get_http("http://www.example2.com/path/to")
+          target.get("http://www.example.com/path/to/1")
+          target.get("http://www.example2.com/path/to")
         end
         it "not exist cookie header" do
           expect(a_request(:get, "http://www.example2.com/path/to").
@@ -160,8 +160,8 @@ describe WebScrapingHelper do
       context "when same path" do
         let(:cookie) { "key=value2; path=/path/to" }
         before do
-          target.get_http("http://www.example.com/path/to/1")
-          target.get_http("http://www.example.com/path/to/2")
+          target.get("http://www.example.com/path/to/1")
+          target.get("http://www.example.com/path/to/2")
         end
         it "exist cookie header" do
           expect(a_request(:get, "http://www.example.com/path/to/2").
@@ -172,8 +172,8 @@ describe WebScrapingHelper do
       context "when another path" do
         let(:cookie) { "key=value2; path=/path/to/1" }
         before do
-          target.get_http("http://www.example.com/path/to/1")
-          target.get_http("http://www.example.com/path/to/2")
+          target.get("http://www.example.com/path/to/1")
+          target.get("http://www.example.com/path/to/2")
         end
         it "not exist cookie header" do
           expect(a_request(:get, "http://www.example.com/path/to/2").
@@ -185,9 +185,9 @@ describe WebScrapingHelper do
     end
   end
 
-  describe "#post_http" do
+  describe "#post" do
     it "request body" do
-      target.post_http("http://www.example.com/post", body: {a: 1, b: 2})
+      target.post("http://www.example.com/post", body: {a: 1, b: 2})
       expect(a_request(:post, "http://www.example.com/post").
              with(body: {a: "1", b: "2"})).to have_been_made.once
     end
@@ -195,7 +195,7 @@ describe WebScrapingHelper do
 
   describe "#exist_cookie?" do
     before do
-      target.get_http("http://www.example.com/path/to/1")
+      target.get("http://www.example.com/path/to/1")
     end
     it "exist cookie" do
       expect(target.exist_cookie?("http://www.example.com/path/to/1")).to eq true
