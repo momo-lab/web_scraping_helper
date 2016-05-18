@@ -5,6 +5,7 @@ require 'rest-client'
 class WebScrapingHelper
   DEFAULT_USER_AGENT = 'Mozilla/5.0'
   DEFAULT_WAIT_TIME = 1
+  DEFAULT_ENCODING = Encoding::UTF_8
 
   def initialize(cookie_filename = nil)
     @jar = HTTP::CookieJar.new
@@ -14,7 +15,7 @@ class WebScrapingHelper
     end
   end
 
-  attr_writer :user_agent, :wait_time
+  attr_writer :user_agent, :wait_time, :encoding
 
   def post_http(url, opts = {})
     request_http(:post, url, opts)
@@ -52,6 +53,12 @@ class WebScrapingHelper
     params[:payload] = opts[:body] if opts[:body]
     res = RestClient::Request.execute(params)
 
+    encoding = opts[:encoding] || get_encoding(res)
+    if encoding
+      res.force_encoding(encoding)
+      res.encode!(@encoding || DEFAULT_ENCODING)
+    end
+
     cookies = res.headers[:set_cookie]
     if cookies
       cookies.each{|cookie| @jar.parse(cookie, url)}
@@ -61,6 +68,11 @@ class WebScrapingHelper
     set_wait_base_time
 
     res
+  end
+
+  def get_encoding(res)
+    content_type = res.headers[:content_type]
+    return content_type[/;\s*charset=([^;]+)/, 1] if content_type
   end
 
   def wait

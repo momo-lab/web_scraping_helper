@@ -3,15 +3,27 @@ require 'spec_helper'
 describe WebScrapingHelper do
   let(:target) do
     stub_request(:get, %r[http://www.example.com/.*]).to_return(
-      headers: { "Set-Cookie" => cookie }
+      headers: {
+        "Set-Cookie" => cookie,
+        "Content-Type" => content_type,
+      },
+      body: body
     )
     stub_request(:post, %r[http://www.example.com/.*]).to_return(
-      headers: { "Set-Cookie" => cookie }
+      headers: {
+        "Set-Cookie" => cookie,
+        "Content-Type" => "text/html;charset=UTF-8",
+      },
+      body: body
     )
     stub_request(:get, %r[http://www.example2.com/.*])
-    WebScrapingHelper.new
+    helper = WebScrapingHelper.new
+    helper.wait_time = 0
+    helper
   end
   let(:cookie) { "key=value; path=/" }
+  let(:content_type) { "text/html;charset=UTF-8" }
+  let(:body) { "abcde" }
 
   it 'has a version number' do
     expect(WebScrapingHelper::VERSION).not_to be nil
@@ -71,6 +83,45 @@ describe WebScrapingHelper do
   end
 
   describe "#get_http" do
+    context "return http headers" do
+      before do
+        @html = target.get_http("http://www.example.com/path/to/1")
+      end
+      it "exist Set-Cookie header" do
+        expect(@html.headers[:set_cookie]).to include "key=value; path=/"
+      end
+    end
+
+    describe "encoding" do
+      context "convert encoding Windows-31J to utf-8" do
+        let(:content_type) { "text/html;charset=Windows-31J" }
+        let(:body) { "あいうえお".encode!("Windows-31J").force_encoding("ASCII-8BIT") }
+        before do
+          @html = target.get_http("http://www.example.com/path/to/1")
+        end
+        it "should encoding utf-8" do
+          expect(@html.encoding).to eq Encoding::UTF_8
+        end
+        it "should equal utf-8 string" do
+          expect(@html).to eq "あいうえお"
+        end
+      end
+
+      context "setting from parameter for unmatched Content-Type" do
+        let(:content_type) { "text/html;charset=UTF-8" }
+        let(:body) { "あいうえお".encode!("Windows-31J").force_encoding("ASCII-8BIT") }
+        before do
+          @html = target.get_http("http://www.example.com/path/to/1", encoding: "Windows-31J")
+        end
+        it "should encoding utf-8" do
+          expect(@html.encoding).to eq Encoding::UTF_8
+        end
+        it "should equal utf-8 string" do
+          expect(@html).to eq "あいうえお"
+        end
+      end
+    end
+
     describe "Cookie header setting" do
       context "when first access" do
         before do
