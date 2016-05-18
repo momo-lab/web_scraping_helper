@@ -1,8 +1,6 @@
 #-*- encoding: utf-8 -*-
 require "web_scraping_helper/version"
-require 'net/http'
-require 'net/https'
-require 'http-cookie'
+require 'rest-client'
 
 class WebScrapingHelper
   DEFAULT_USER_AGENT = 'Mozilla/5.0'
@@ -19,11 +17,11 @@ class WebScrapingHelper
   attr_writer :user_agent, :wait_time
 
   def post_http(url, opts = {})
-    request_http(Net::HTTP::Post, url, opts)
+    request_http(:post, url, opts)
   end
 
   def get_http(url, opts = {})
-    request_http(Net::HTTP::Get, url, opts)
+    request_http(:get, url, opts)
   end
 
   def exist_cookie?(url)
@@ -35,10 +33,6 @@ class WebScrapingHelper
 
   def request_http(request_method, url, opts)
     wait
-    uri = URI.parse(url.to_s)
-
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true if uri.scheme == "https"
 
     headers = {}
     opts.each{|k, v| headers[k.downcase] = v if String === k}
@@ -49,19 +43,24 @@ class WebScrapingHelper
       cookie = HTTP::Cookie.cookie_value(@jar.cookies(url))
       headers["cookie"] = cookie unless cookie.empty?
     end
-    req = request_method.new(uri.request_uri, headers)
-    req.set_form_data(opts[:body]) if opts[:body]
 
-    res = http.start do
-      http.request req
-    end
-    cookie = res["set-cookie"]
-    if cookie
-      @jar.parse(cookie, url)
+    params = {
+      method: request_method,
+      url: url,
+      headers: headers
+    }
+    params[:payload] = opts[:body] if opts[:body]
+    res = RestClient::Request.execute(params)
+
+    cookies = res.headers[:set_cookie]
+    if cookies
+      cookies.each{|cookie| @jar.parse(cookie, url)}
       @jar.save(@cookie_filename) if @cookie_filename
     end
+
     set_wait_base_time
-    res.body
+
+    res
   end
 
   def wait
