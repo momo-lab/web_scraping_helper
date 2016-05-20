@@ -1,6 +1,7 @@
 #-*- encoding: utf-8 -*-
 require "web_scraping_helper/version"
 require 'rest-client'
+require 'fileutils'
 
 class WebScrapingHelper
   DEFAULT_USER_AGENT = 'Mozilla/5.0'
@@ -16,6 +17,7 @@ class WebScrapingHelper
   end
 
   attr_writer :user_agent, :wait_time, :encoding
+  attr_writer :cache_dir
 
   def post(url, opts = {})
     request_http(:post, url, opts)
@@ -35,6 +37,9 @@ class WebScrapingHelper
   private
 
   def request_http(request_method, url, opts)
+    if request_method == :get && (res = find_cache(url))
+      return res
+    end
     wait
 
     headers = {}
@@ -68,6 +73,7 @@ class WebScrapingHelper
     end
 
     set_wait_base_time
+    save_cache(url, res)
 
     res
   end
@@ -75,6 +81,24 @@ class WebScrapingHelper
   def get_encoding(res)
     content_type = res.headers[:content_type]
     return content_type[/;\s*charset=([^;]+)/, 1] if content_type
+  end
+
+  def find_cache(url)
+    return nil unless @cache_dir
+    cache_file = url_to_cache_path(url)
+    return nil unless File.exist?(cache_file)
+    File.open(cache_file){|f| f.read}
+  end
+
+  def save_cache(url, html)
+    return unless @cache_dir
+    cache_file = url_to_cache_path(url)
+    FileUtils.mkdir_p(File.dirname(cache_file))
+    File.open(cache_file, "w+"){|f| f.print html}
+  end
+
+  def url_to_cache_path(url)
+    File.expand_path(url.gsub(%r{[\\/:\?"<>\|]}, "_"), @cache_dir)
   end
 
   def wait

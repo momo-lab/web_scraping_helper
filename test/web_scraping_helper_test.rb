@@ -4,13 +4,13 @@ require 'fileutils'
 
 class WebScrapingHelperTest < Minitest::Test
   def setup
-    @tmpdir = Dir.mktmpdir
-#    FileUtils.rm_rf @tmpdir
+    @tmpdir = File.expand_path("./web_scraping_helper", Dir.tmpdir)
     @target = WebScrapingHelper.new
+    @target.wait_time = 0
   end
 
   def teardown
-#    FileUtils.rm_rf @tmpdir
+    FileUtils.rm_rf @tmpdir
   end
 
   def test_default_user_agent
@@ -134,13 +134,19 @@ class WebScrapingHelperTest < Minitest::Test
   end
 
   def test_cache_control
+    @target.cache_dir = @tmpdir
+
     stub_request(:get, "http://example.com/path/to/1")
       .to_return(
         headers: { "Content-Type" => "text/html; charset=UTF-8" },
         body: "abcde",
       )
-    html = @target.get("http://example.com/path/to/1")
+    html1 = @target.get("http://example.com/path/to/1")
     assert{ File.exist?(@tmpdir + "/http___example.com_path_to_1") }
+
+    WebMock.reset!
+    html2 = @target.get("http://example.com/path/to/1")
+    assert{ html2 == html1 }
   end
 end
 
