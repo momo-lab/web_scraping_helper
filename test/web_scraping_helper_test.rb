@@ -5,12 +5,12 @@ require 'fileutils'
 class WebScrapingHelperTest < Minitest::Test
   def setup
     @tmpdir = Dir.mktmpdir
+    WebScrapingHelper.reset!
     @target = WebScrapingHelper.new
     @target.wait_time = 0
   end
 
   def teardown
-    WebScrapingHelper.cache_dir = nil
     FileUtils.rm_rf @tmpdir
   end
 
@@ -167,6 +167,16 @@ class WebScrapingHelperTest < Minitest::Test
     WebMock.reset!
     html2 = @target.get("http://example.com/path/to/1")
     assert{ html2 == html1 }
+  end
+
+  def test_reset_cache_dir
+    WebScrapingHelper.cache_dir = "/tmp"
+    @target.cache_dir = "/tmp2"
+    assert{ WebScrapingHelper.cache_dir == "/tmp" }
+    assert{ @target.cache_dir == "/tmp2" }
+    WebScrapingHelper.reset!
+    assert{ WebScrapingHelper.cache_dir.nil? }
+    assert{ @target.cache_dir == "/tmp2" }
   end
 end
 

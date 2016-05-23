@@ -8,10 +8,15 @@ class WebScrapingHelper
   DEFAULT_WAIT_TIME = 1
   DEFAULT_ENCODING = Encoding::UTF_8
 
-  @@global_cache_dir = nil
+  def self.reset!
+    @@global_cache_dir = nil
+  end
+  reset!
+
   def self.cache_dir
     @@global_cache_dir
   end
+
   def self.cache_dir=(v)
     @@global_cache_dir = v
   end
