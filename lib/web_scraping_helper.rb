@@ -24,8 +24,8 @@ class WebScrapingHelper
     end
   end
 
-  attr_writer :user_agent, :wait_time, :encoding
-  attr_writer :cache_dir
+  attr_accessor :user_agent, :wait_time, :encoding
+  attr_accessor :cache_dir
 
   def post(url, opts = {})
     request_http(:post, url, opts)
@@ -91,25 +91,22 @@ class WebScrapingHelper
     return content_type[/;\s*charset=([^;]+)/, 1] if content_type
   end
 
-  def cache_dir
-    @cache_dir || @@global_cache_dir
-  end
-
   def find_cache(url)
-    return nil unless cache_dir
     cache_file = url_to_cache_path(url)
-    return nil unless File.exist?(cache_file)
+    return nil if cache_file.nil? or not File.exist?(cache_file)
     File.open(cache_file){|f| f.read}
   end
 
   def save_cache(url, html)
-    return unless cache_dir
     cache_file = url_to_cache_path(url)
+    return if cache_file.nil?
     FileUtils.mkdir_p(File.dirname(cache_file))
     File.open(cache_file, "w+"){|f| f.print html}
   end
 
   def url_to_cache_path(url)
+    cache_dir = @cache_dir || @@global_cache_dir
+    return unless cache_dir
     File.expand_path(url.gsub(%r{[\\/:\?"<>\|]}, "_"), cache_dir)
   end
 
