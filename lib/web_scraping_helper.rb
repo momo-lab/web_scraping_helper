@@ -8,6 +8,14 @@ class WebScrapingHelper
   DEFAULT_WAIT_TIME = 1
   DEFAULT_ENCODING = Encoding::UTF_8
 
+  @@global_cache_dir = nil
+  def self.cache_dir
+    @@global_cache_dir
+  end
+  def self.cache_dir=(v)
+    @@global_cache_dir = v
+  end
+
   def initialize(cookie_filename = nil)
     @jar = HTTP::CookieJar.new
     if cookie_filename
@@ -83,22 +91,26 @@ class WebScrapingHelper
     return content_type[/;\s*charset=([^;]+)/, 1] if content_type
   end
 
+  def cache_dir
+    @cache_dir || @@global_cache_dir
+  end
+
   def find_cache(url)
-    return nil unless @cache_dir
+    return nil unless cache_dir
     cache_file = url_to_cache_path(url)
     return nil unless File.exist?(cache_file)
     File.open(cache_file){|f| f.read}
   end
 
   def save_cache(url, html)
-    return unless @cache_dir
+    return unless cache_dir
     cache_file = url_to_cache_path(url)
     FileUtils.mkdir_p(File.dirname(cache_file))
     File.open(cache_file, "w+"){|f| f.print html}
   end
 
   def url_to_cache_path(url)
-    File.expand_path(url.gsub(%r{[\\/:\?"<>\|]}, "_"), @cache_dir)
+    File.expand_path(url.gsub(%r{[\\/:\?"<>\|]}, "_"), cache_dir)
   end
 
   def wait

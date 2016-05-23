@@ -4,12 +4,13 @@ require 'fileutils'
 
 class WebScrapingHelperTest < Minitest::Test
   def setup
-    @tmpdir = File.expand_path("./web_scraping_helper", Dir.tmpdir)
+    @tmpdir = Dir.mktmpdir
     @target = WebScrapingHelper.new
     @target.wait_time = 0
   end
 
   def teardown
+    WebScrapingHelper.cache_dir = nil
     FileUtils.rm_rf @tmpdir
   end
 
@@ -131,6 +132,25 @@ class WebScrapingHelperTest < Minitest::Test
     stub_request(:get, "http://example.com/path/to/2")
       .with{|req| not req.headers.keys.include?("Cookie") }
     @target.get("http://example.com/path/to/2")
+  end
+
+  def test_global_cache_control
+    WebScrapingHelper.cache_dir = @tmpdir
+
+    stub_request(:get, "http://example.com/path/to/global")
+      .to_return(
+        headers: { "Content-Type" => "text/html; charset=UTF-8" },
+        body: "abcde",
+      )
+    html1 = @target.get("http://example.com/path/to/global")
+    assert{ File.exist?(@tmpdir + "/http___example.com_path_to_global") }
+
+    WebMock.reset!
+    html2 = @target.get("http://example.com/path/to/global")
+    assert{ html2 == html1 }
+
+    html3 = WebScrapingHelper.new.get("http://example.com/path/to/global")
+    assert{ html3 == html1 }
   end
 
   def test_cache_control
