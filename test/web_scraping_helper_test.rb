@@ -178,5 +178,40 @@ class WebScrapingHelperTest < Minitest::Test
     assert{ WebScrapingHelper.cache_dir.nil? }
     assert{ @target.cache_dir == "/tmp2" }
   end
+
+  def test_before_request
+    requested_urls = []
+    WebScrapingHelper.before do |url|
+      requested_urls << url
+    end
+
+    url1 = "http://example.com/path/to/1"
+    url2 = "http://example.com/path/to/2"
+    stub_request(:get, url1)
+    stub_request(:get, url2)
+    @target.get url1
+    @target.get url2
+    assert{ requested_urls == [url1, url2] }
+  end
+
+  def test_after_request
+    requested_urls = []
+    counter = 0
+    WebScrapingHelper.after do |url, html|
+      requested_urls << [url, html]
+    end
+    WebScrapingHelper.after do |url, html|
+      counter += 1
+    end
+
+    url1 = "http://example.com/path/to/1"; body1 = "aaa"
+    url2 = "http://example.com/path/to/2"; body2 = "bbb"
+    stub_request(:get, url1).to_return(body: body1)
+    stub_request(:get, url2).to_return(body: body2)
+    @target.get url1
+    @target.get url2
+    assert{ requested_urls == [[url1, body1], [url2, body2]] }
+    assert{ counter == 2 }
+  end
 end
 

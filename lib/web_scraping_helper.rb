@@ -10,6 +10,7 @@ class WebScrapingHelper
 
   def self.reset!
     @@global_cache_dir = nil
+    @@blocks = []
   end
   reset!
 
@@ -19,6 +20,14 @@ class WebScrapingHelper
 
   def self.cache_dir=(v)
     @@global_cache_dir = v
+  end
+
+  def self.before(&block)
+    @@blocks << {timing: :before, proc: block}
+  end
+
+  def self.after(&block)
+    @@blocks << {timing: :after, proc: block}
   end
 
   def initialize(cookie_filename = nil)
@@ -50,6 +59,10 @@ class WebScrapingHelper
   private
 
   def request_http(request_method, url, opts)
+    @@blocks
+      .select{|block| block[:timing] == :before}
+      .each{|block| block[:proc].call(url) }
+
     if request_method == :get && (res = find_cache(url))
       return res
     end
@@ -87,6 +100,10 @@ class WebScrapingHelper
 
     set_wait_base_time
     save_cache(url, res)
+
+    @@blocks
+      .select{|block| block[:timing] == :after}
+      .each{|block| block[:proc].call(url, res) }
 
     res
   end
