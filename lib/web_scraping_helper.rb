@@ -116,14 +116,14 @@ class WebScrapingHelper
   def find_cache(url)
     cache_file = url_to_cache_path(url)
     return nil if cache_file.nil? or not File.exist?(cache_file)
-    File.open(cache_file){|f| f.read}
+    File.open(cache_file, "r:utf-8"){|f| f.read}
   end
 
   def save_cache(url, html)
     cache_file = url_to_cache_path(url)
     return if cache_file.nil?
     FileUtils.mkdir_p(File.dirname(cache_file))
-    File.open(cache_file, "w+"){|f| f.print html}
+    File.open(cache_file, "w+:utf-8"){|f| f.print html}
   end
 
   def url_to_cache_path(url)
